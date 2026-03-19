@@ -18,11 +18,12 @@ import type { FeishuFooterConfig } from './types';
  * The default footer configuration.
  *
  * By default all metadata items are hidden — neither status text
- * ("已完成" / "出错" / "已停止") nor elapsed time are shown.
+ * ("已完成" / "出错" / "已停止"), elapsed time, nor model name are shown.
  */
 export const DEFAULT_FOOTER_CONFIG: Required<FeishuFooterConfig> = {
   status: false,
   elapsed: false,
+  model: false,
 };
 
 // ---------------------------------------------------------------------------
@@ -40,5 +41,6 @@ export function resolveFooterConfig(cfg?: FeishuFooterConfig): Required<FeishuFo
   return {
     status: cfg.status ?? DEFAULT_FOOTER_CONFIG.status,
     elapsed: cfg.elapsed ?? DEFAULT_FOOTER_CONFIG.elapsed,
+    model: cfg.model ?? DEFAULT_FOOTER_CONFIG.model,
   };
 }

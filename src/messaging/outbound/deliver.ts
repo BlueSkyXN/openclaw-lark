@@ -14,6 +14,7 @@ import { LarkClient } from '../../core/lark-client';
 import { normalizeFeishuTarget, resolveReceiveIdType } from '../../core/targets';
 import { optimizeMarkdownStyle } from '../../card/markdown-style';
 import { uploadAndSendMediaLark } from './media';
+import { convertMarkdownTablesForFeishu } from './markdown-tables';
 import { formatLarkError } from '../../core/api-error';
 import { larkLogger } from '../../core/lark-logger';
 
@@ -55,20 +56,9 @@ function normalizeAtMentions(text: string): string {
  * Pre-process text for Lark rendering:
  * mention normalisation + table conversion + style optimization.
  */
-function prepareTextForLark(text: string): string {
+function prepareTextForLark(cfg: ClawdbotConfig, text: string, accountId?: string): string {
   let processed = normalizeAtMentions(text);
-
-  // Convert markdown tables to Feishu-compatible format if the runtime
-  // provides a converter.
-  try {
-    const runtime = LarkClient.runtime;
-    if (runtime?.channel?.text?.convertMarkdownTables) {
-      processed = runtime.channel.text.convertMarkdownTables(processed, 'bullets');
-    }
-  } catch {
-    // Runtime not available -- use the text as-is.
-  }
-
+  processed = convertMarkdownTablesForFeishu(cfg, processed, accountId);
   return optimizeMarkdownStyle(processed, 1);
 }
 
@@ -245,7 +235,7 @@ export async function sendTextLark(params: SendTextLarkParams): Promise<FeishuSe
 
   log.info(`sendTextLark: target=${to}, textLength=${text.length}`);
   const client = LarkClient.fromCfg(cfg, accountId).sdk;
-  const processedText = prepareTextForLark(text);
+  const processedText = prepareTextForLark(cfg, text, accountId);
   const content = buildPostContent(processedText);
 
   return sendImMessage({ client, to, content, msgType: 'post', replyToMessageId, replyInThread });

@@ -9,6 +9,7 @@
  */
 
 import { optimizeMarkdownStyle } from './markdown-style';
+import type { FeishuFooterConfig } from '../core/types';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -204,7 +205,8 @@ export function buildCardContent(
     elapsedMs?: number;
     isError?: boolean;
     isAborted?: boolean;
-    footer?: { status?: boolean; elapsed?: boolean };
+    footer?: FeishuFooterConfig;
+    modelName?: string;
   } = {},
 ): FeishuCard {
   switch (state) {
@@ -222,6 +224,7 @@ export function buildCardContent(
         reasoningElapsedMs: data.reasoningElapsedMs,
         isAborted: data.isAborted,
         footer: data.footer,
+        modelName: data.modelName,
       });
     case 'confirm':
       return buildConfirmCard(data.confirmData!);
@@ -291,9 +294,11 @@ function buildCompleteCard(params: {
   reasoningText?: string;
   reasoningElapsedMs?: number;
   isAborted?: boolean;
-  footer?: { status?: boolean; elapsed?: boolean };
+  footer?: FeishuFooterConfig;
+  modelName?: string;
 }): FeishuCard {
-  const { text, toolCalls, elapsedMs, isError, reasoningText, reasoningElapsedMs, isAborted, footer } = params;
+  const { text, toolCalls, elapsedMs, isError, reasoningText, reasoningElapsedMs, isAborted, footer, modelName } =
+    params;
   const elements: CardElement[] = [];
 
   // Collapsible reasoning panel (before main content)
@@ -350,7 +355,7 @@ function buildCompleteCard(params: {
   }
 
   // Footer meta-info: each metadata item is independently controlled via
-  // the `footer` config. Both status and elapsed default to hidden.
+  // the `footer` config. Status, elapsed, and model all default to hidden.
   const parts: string[] = [];
 
   if (footer?.status) {
@@ -365,6 +370,10 @@ function buildCompleteCard(params: {
 
   if (footer?.elapsed && elapsedMs != null) {
     parts.push(`耗时 ${formatElapsed(elapsedMs)}`);
+  }
+
+  if (footer?.model && modelName) {
+    parts.push(`模型 ${modelName}`);
   }
 
   if (parts.length > 0) {

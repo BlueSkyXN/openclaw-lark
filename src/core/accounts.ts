@@ -183,6 +183,22 @@ export function getLarkAccount(cfg: ClawdbotConfig, accountId?: string | null): 
   };
 }
 
+/**
+ * Build an account-scoped config view for downstream helpers that resolve
+ * settings from `cfg.channels.feishu`.
+ */
+export function createAccountScopedConfig(cfg: ClawdbotConfig, accountId?: string | null): ClawdbotConfig {
+  const account = getLarkAccount(cfg, accountId);
+
+  return {
+    ...cfg,
+    channels: {
+      ...cfg.channels,
+      feishu: account.config,
+    },
+  };
+}
+
 /** Return all accounts that are both configured and enabled. */
 export function getEnabledLarkAccounts(cfg: ClawdbotConfig): LarkAccount[] {
   const ids = getLarkAccountIds(cfg);

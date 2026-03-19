@@ -68,10 +68,12 @@ export interface FeishuToolsConfig {
   okr?: boolean;
 }
 
-/** Per-feature toggles for card footer metadata visibility. */
+/** Per-feature toggles for final streaming-card footer metadata visibility. */
 export interface FeishuFooterConfig {
   status?: boolean;
   elapsed?: boolean;
+  /** Show the selected model name on final streaming cards. */
+  model?: boolean;
 }
 
 // ---------------------------------------------------------------------------

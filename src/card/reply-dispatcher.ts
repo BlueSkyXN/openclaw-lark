@@ -21,6 +21,7 @@ import { getLarkAccount } from '../core/accounts';
 import { resolveFooterConfig } from '../core/footer-config';
 import { LarkClient } from '../core/lark-client';
 import { larkLogger } from '../core/lark-logger';
+import { resolveFeishuMarkdownTableMode } from '../messaging/outbound/markdown-tables';
 import { sendMessageFeishu, sendMarkdownCardFeishu } from '../messaging/outbound/send';
 import { addTypingIndicator, removeTypingIndicator, type TypingIndicatorState } from '../messaging/outbound/typing';
 import { resolveReplyMode, expandAutoMode, shouldUseCard } from './reply-mode';
@@ -71,10 +72,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   // ---- Chunk & render settings (static mode only) ----
   const textChunkLimit = core.channel.text.resolveTextChunkLimit(cfg, 'feishu', accountId, { fallbackLimit: 4000 });
   const chunkMode = core.channel.text.resolveChunkMode(cfg, 'feishu');
-  const tableMode = core.channel.text.resolveMarkdownTableMode({
-    cfg,
-    channel: 'feishu',
-  });
+  const tableMode = resolveFeishuMarkdownTableMode(cfg, account.accountId);
 
   // ---- Streaming card controller (instantiated only when needed) ----
   const controller = useStreamingCards
@@ -166,6 +164,12 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
   // ---- dispatchFullyComplete flag (static mode) ----
   let dispatchFullyComplete = false;
 
+  const onModelSelected = (ctx: { provider: string; model: string; thinkLevel: string | undefined }) => {
+    const modelName = [ctx.provider, ctx.model].filter(Boolean).join('/');
+    controller?.setModelName(modelName || undefined);
+    prefixContext.onModelSelected?.(ctx);
+  };
+
   // ---- Build dispatcher ----
   const { dispatcher, replyOptions, markDispatchIdle } = core.channel.reply.createReplyDispatcherWithTyping({
     responsePrefix: prefixContext.responsePrefix,
@@ -217,6 +221,8 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
 
       // ---- Static delivery ----
       if (shouldUseCard(text)) {
+        // Card markdown can render tables natively, so `tableMode` conversion is
+        // intentionally reserved for plain post messages in the text path below.
         const chunks = core.channel.text.chunkTextWithMode(text, textChunkLimit, chunkMode);
         log.info('deliver: sending card chunks', { count: chunks.length, chatId });
         for (const chunk of chunks) {
@@ -244,6 +250,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
               cfg,
               to: chatId,
               text: chunk,
+              tablesAlreadyConverted: true,
               replyToMessageId,
               replyInThread,
               accountId,
@@ -306,7 +313,7 @@ export function createFeishuReplyDispatcher(params: CreateFeishuReplyDispatcherP
     dispatcher,
     replyOptions: {
       ...replyOptions,
-      onModelSelected: prefixContext.onModelSelected,
+      onModelSelected,
       disableBlockStreaming: !enableBlockStreaming,
       ...(controller
         ? {

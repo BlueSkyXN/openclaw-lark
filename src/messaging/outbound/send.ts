@@ -13,6 +13,7 @@ import { runWithMessageUnavailableGuard } from '../../core/message-unavailable';
 import type { MentionInfo } from '../types';
 import { optimizeMarkdownStyle } from '../../card/markdown-style';
 import { buildMentionedMessage, buildMentionedCardContent } from '../inbound/mention';
+import { convertMarkdownTablesForFeishu } from './markdown-tables';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -35,6 +36,8 @@ export interface SendFeishuMessageParams {
   accountId?: string;
   /** When true, the reply appears in the thread instead of main chat. */
   replyInThread?: boolean;
+  /** When true, the caller already applied account-scoped markdown table conversion. */
+  tablesAlreadyConverted?: boolean;
 }
 
 /**
@@ -74,7 +77,7 @@ export interface SendFeishuCardParams {
  * @returns The send result containing the new message ID.
  */
 export async function sendMessageFeishu(params: SendFeishuMessageParams): Promise<FeishuSendResult> {
-  const { cfg, to, text, replyToMessageId, mentions, accountId, replyInThread } = params;
+  const { cfg, to, text, replyToMessageId, mentions, accountId, replyInThread, tablesAlreadyConverted } = params;
 
   const client = LarkClient.fromCfg(cfg, accountId).sdk;
 
@@ -84,15 +87,8 @@ export async function sendMessageFeishu(params: SendFeishuMessageParams): Promis
     messageText = buildMentionedMessage(mentions, messageText);
   }
 
-  // Convert markdown tables to Feishu-compatible format if the runtime
-  // provides a converter.
-  try {
-    const runtime = LarkClient.runtime;
-    if (runtime?.channel?.text?.convertMarkdownTables) {
-      messageText = runtime.channel.text.convertMarkdownTables(messageText, 'bullets');
-    }
-  } catch {
-    // Runtime not available -- use the text as-is.
+  if (!tablesAlreadyConverted) {
+    messageText = convertMarkdownTablesForFeishu(cfg, messageText, accountId);
   }
 
   // Apply Markdown style optimization.

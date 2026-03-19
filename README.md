@@ -24,6 +24,7 @@ This plugin provides comprehensive Lark/Feishu integration for OpenClaw, includi
 Additionally, the plugin supports:
 - **📱 Interactive Cards**: Real-time status updates (Thinking/Generating/Complete), plus confirmation buttons for sensitive operations
 - **🌊 Streaming Responses**: Live streaming text directly within message cards
+- **🧾 Smarter Feishu Rendering**: Final streaming cards can show footer metadata such as elapsed time/model, and markdown tables respect per-account rendering settings
 - **🔒 Permission Policies**: Flexible access control policies for DMs and group chats
 - **⚙️ Advanced Group Configuration**: Per-group settings including allowlists, skill bindings, and custom system prompts
 
